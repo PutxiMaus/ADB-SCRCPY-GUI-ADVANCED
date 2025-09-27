@@ -14,5 +14,4 @@ Punto de entrada: `main.py`.
 ## Requisitos
 
 - Python 3.10+ (probado con 3.13 en Windows).
-- Java 21
 - Windows: comandos `ping -n` y `arp -a`.
