@@ -7,11 +7,14 @@ Punto de entrada: `main.py`.
 
 ## Estructura principal
 - `main.py` — aplicación principal (Tkinter).
-- `adb_commands.py` — helpers ADB usados por la app.
-- `bat_sources/` — scripts .bat auxiliares antiguos.
-- `tools/` — carpeta con `platform-tools`, `scrcpy`, `ipscan` (portable).
+- `antique_bats/` — scripts .bat auxiliares antiguos.
+- `tools/` — carpeta con `platform-tools`, `scrcpy` entre otros.
 
 ## Requisitos
 
 - Python 3.10+ (probado con 3.13 en Windows).
 - Windows: comandos `ping -n` y `arp -a`.
+
+## Changelog
+
+Consulta todas las versiones y cambios en el archivo [CHANGELOG.md](./CHANGELOG.md).
