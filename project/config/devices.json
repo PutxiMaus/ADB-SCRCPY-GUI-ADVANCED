@@ -5,33 +5,6 @@
         "ip": "",
         "notes": "",
         "color": ""
-    },
-    "motorola": {
-        "mac": "6a-a7-0f-9f-60-cb",
-        "port": 5555,
-        "ip": "",
-        "notes": "",
-        "color": null
-    },
-    "motorola pant": {
-        "mac": "ca-35-d9-a3-9f-06",
-        "port": 5555,
-        "ip": "",
-        "notes": "",
-        "color": null
-    },
-    "xiaomi tv": {
-        "mac": "ea-38-cb-29-8f-14",
-        "port": 5555,
-        "ip": "",
-        "notes": "",
-        "color": null
-    },
-    "motorola cambrils": {
-        "mac": "6a-13-11-5d-9f-ec",
-        "port": 5555,
-        "ip": "192.168.1.43",
-        "notes": null,
-        "color": null
     }
+
 }
