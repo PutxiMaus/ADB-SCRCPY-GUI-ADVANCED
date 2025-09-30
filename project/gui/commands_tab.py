@@ -1,0 +1,176 @@
+import os, subprocess, random, tkinter as tk
+from tkinter import ttk, filedialog, simpledialog
+from ..config.config import PROJECT_ROOT
+from ..utils.adb_utils import exec_adb, run_in_thread
+from ..utils.gui_utils import gui_log
+
+# procesos globales
+_scrcpy_proc = None
+_screenrec_proc = None
+
+# =========================
+# Funciones de comandos
+# =========================
+def start_scrcpy():
+    global _scrcpy_proc
+    if _scrcpy_proc and getattr(_scrcpy_proc, 'poll', lambda: None)() is None:
+        gui_log("scrcpy ya está en ejecución", level="error")
+        return
+    try:
+        _scrcpy_proc = subprocess.Popen(["scrcpy"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        gui_log("scrcpy iniciado", level="info")
+    except Exception as e:
+        gui_log(f"No se pudo iniciar scrcpy: {e}", level="error")
+
+def stop_scrcpy():
+    global _scrcpy_proc
+    if not _scrcpy_proc:
+        gui_log("scrcpy no está en ejecución", level="error")
+        return
+    try:
+        _scrcpy_proc.terminate()
+        _scrcpy_proc.wait(timeout=5)
+    except Exception:
+        try:
+            _scrcpy_proc.kill()
+        except Exception:
+            pass
+    _scrcpy_proc = None
+    gui_log("scrcpy detenido", level="info")
+
+def install_apk():
+    apk = filedialog.askopenfilename(title="Selecciona APK", filetypes=[("APK files", "*.apk")])
+    if not apk:
+        return
+    run_in_thread(lambda: exec_adb(["install", "-r", apk]))
+
+def uninstall_app():
+    pkg = simpledialog.askstring("Uninstall", "Nombre del paquete (p.ej. com.example.app):")
+    if not pkg:
+        return
+    run_in_thread(lambda: exec_adb(["uninstall", pkg]))
+
+def reboot_device():
+    run_in_thread(lambda: exec_adb(["reboot"]))
+
+def adb_disconnect_all():
+    run_in_thread(lambda: exec_adb(["disconnect"]))
+
+def dump_logcat():
+    run_in_thread(lambda: exec_adb(["logcat", "-d"]))
+
+def get_device_info():
+    run_in_thread(lambda: exec_adb(["shell", "getprop"]))
+
+def start_screenrecord():
+    global _screenrec_proc
+    if _screenrec_proc and getattr(_screenrec_proc, 'poll', lambda: None)() is None:
+        gui_log("screenrecord ya en ejecución", level="error")
+        return
+    try:
+        _screenrec_proc = subprocess.Popen(
+            ["adb", "shell", "screenrecord", "/sdcard/record.mp4"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        gui_log("screenrecord iniciado en /sdcard/record.mp4", level="info")
+    except Exception as e:
+        gui_log(f"No se pudo iniciar screenrecord: {e}", level="error")
+
+def stop_screenrecord_and_pull():
+    global _screenrec_proc
+    if not _screenrec_proc:
+        gui_log("No hay screenrecord en ejecución", level="error")
+        return
+    try:
+        _screenrec_proc.terminate()
+        _screenrec_proc.wait(timeout=5)
+    except Exception:
+        try:
+            _screenrec_proc.kill()
+        except Exception:
+            pass
+    _screenrec_proc = None
+    local = filedialog.asksaveasfilename(defaultextension=".mp4",
+                                         filetypes=[("MP4 files", "*.mp4")],
+                                         title="Guardar grabación como")
+    if not local:
+        gui_log("Cancelado pull de grabación", level="error")
+        return
+    run_in_thread(lambda: exec_adb(["pull", "/sdcard/record.mp4", local]))
+
+def pull_file():
+    remote = simpledialog.askstring("Pull", "Ruta en dispositivo (ej: /sdcard/file.txt):")
+    if not remote:
+        return
+    local = filedialog.asksaveasfilename(title="Guardar como", initialfile=os.path.basename(remote))
+    if not local:
+        return
+    run_in_thread(lambda: exec_adb(["pull", remote, local]))
+
+def push_file():
+    local = filedialog.askopenfilename(title="Selecciona fichero local")
+    if not local:
+        return
+    remote = simpledialog.askstring("Push", "Ruta destino en dispositivo (ej: /sdcard/file.txt):")
+    if not remote:
+        return
+    run_in_thread(lambda: exec_adb(["push", local, remote]))
+
+# =========================
+# Construcción de pestaña
+# =========================
+def create_commands_tab(notebook):
+    tab_comandos = ttk.Frame(notebook)
+    notebook.add(tab_comandos, text="Comandos")
+
+    cmds_outer = ttk.Frame(tab_comandos, padding=12)
+    cmds_outer.grid(row=0, column=0, sticky="nsew")
+
+    cmds_grid = ttk.Frame(cmds_outer, padding=12)
+    cmds_grid.grid(row=0, column=0, sticky="nsew")
+
+    # expandir
+    tab_comandos.rowconfigure(0, weight=1)
+    tab_comandos.columnconfigure(0, weight=1)
+    cmds_outer.rowconfigure(0, weight=1)
+    cmds_outer.columnconfigure(0, weight=1)
+
+    commands = [
+        ("Home", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "3"]))),
+        ("Power", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "26"]))),
+        ("Vol +", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "24"]))),
+        ("Vol -", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "25"]))),
+        ("Screenshot", lambda: run_in_thread(lambda: exec_adb(["shell", "screencap", "-p", "/sdcard/screen.png"]) or exec_adb(["pull", "/sdcard/screen.png", os.path.join(PROJECT_ROOT, "screenshot.png")]))),
+        ("Play Store", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.android.vending", "-c", "android.intent.category.LAUNCHER", "1"]))),
+        ("YouTube", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.google.android.youtube", "-c", "android.intent.category.LAUNCHER", "1"]))),
+        ("Crazy taps", lambda: run_in_thread(lambda: [exec_adb(["shell", "input", "tap", str(random.randint(0, 1080)), str(random.randint(0, 1920))]) for _ in range(10)])),
+        ("Chrome", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.android.chrome", "-c", "android.intent.category.LAUNCHER", "1"]))),
+        ("Disconnect all", adb_disconnect_all),
+        ("Reboot", reboot_device),
+        ("Install APK", install_apk),
+        ("Uninstall app", uninstall_app),
+        ("Start scrcpy", start_scrcpy),
+        ("Stop scrcpy", stop_scrcpy),
+        ("Start screenrecord", start_screenrecord),
+        ("Stop screenrecord & pull", stop_screenrecord_and_pull),
+        ("Pull file", pull_file),
+        ("Push file", push_file),
+        ("Get device info", get_device_info),
+        ("Dump logcat", dump_logcat),
+    ]
+
+    cols = 3
+    for i, (label, cb) in enumerate(commands):
+        r = i // cols
+        c = i % cols
+        btn = ttk.Button(cmds_grid, text=label, command=cb)
+        btn.grid(row=r, column=c, padx=16, pady=8, ipadx=10, ipady=8, sticky="nsew")
+
+    for c in range(cols):
+        cmds_grid.columnconfigure(c, weight=1)
+
+    total_rows = (len(commands) + cols - 1) // cols
+    for r in range(total_rows):
+        cmds_grid.rowconfigure(r, weight=1, minsize=50)
+
+    return tab_comandos
