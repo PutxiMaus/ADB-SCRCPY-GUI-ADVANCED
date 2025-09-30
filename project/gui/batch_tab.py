@@ -26,6 +26,9 @@ def create_batch_tab(notebook):
     batch_combobox = ttk.Combobox(batch_frame, textvariable=batch_var, state="readonly", width=60)
     batch_combobox.grid(row=0, column=0, columnspan=6, padx=6, pady=6, sticky="ew")
 
+    # 🔹 Vincular selección al editor
+    batch_combobox.bind("<<ComboboxSelected>>", lambda e: load_batch())
+
     batch_note = ttk.Label(batch_frame, text="Añade .bat en 'project/utils/batch' si quieres añadirlos manualmente.", font=(None, 8))
     batch_note.grid(row=1, column=0, columnspan=6, pady=(0,6), sticky="w")
 
