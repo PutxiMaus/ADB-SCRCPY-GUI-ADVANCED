@@ -2,7 +2,8 @@ import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-TOOLS_DIR = "config" / "tools" / "platform-tools"
+
+TOOLS_DIR = PROJECT_ROOT / "config" / "tools" / "platform-tools"
 ADB_EXE = "adb.exe" if os.name == "nt" else "adb"
 
 # Archivos de perfiles
