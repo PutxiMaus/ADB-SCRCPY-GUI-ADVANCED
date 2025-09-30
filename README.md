@@ -1,14 +1,14 @@
 # SCRCPY Python GUI
 
 Interfaz gráfica en Python/Tkinter para gestionar conexiones ADB, lanzar `scrcpy` y ejecutar comandos auxiliares.
-Punto de entrada: `main.py`.
+Punto de entrada: `start.py`.
 
 **Autor:** PutxiMaus
 
 ## Estructura principal
-- `main.py` — aplicación principal (Tkinter).
-- `antique_bats/` — scripts .bat auxiliares antiguos.
-- `tools/` — carpeta con `platform-tools`, `scrcpy` entre otros.
+- `start.py` — launcher.
+- `project/` — todo el proyecto.
+
 
 ## Requisitos
 
