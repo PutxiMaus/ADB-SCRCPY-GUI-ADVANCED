@@ -8,4 +8,4 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PERFILES_FILE = PROJECT_ROOT / "config" / "devices.json"
 
 # Base para herramientas (por ejemplo aapt.exe, scrcpy, platform-tools)
-TOOLS_DIR = PROJECT_ROOT / "tools"
+TOOLS_DIR = PROJECT_ROOT / "config" / "tools" / "platform-tools"
