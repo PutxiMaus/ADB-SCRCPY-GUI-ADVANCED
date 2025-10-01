@@ -18,8 +18,9 @@ def run_adb(cmd):
 def exec_adb(args):
     if isinstance(args, str):
         args = args.split()
-    cmd = ["adb"] + args
-    gui_log(f">> {' '.join(cmd)}", level="cmd")
+    cmd = [str(TOOLS_DIR/ADB_EXE)] + args
+    log_cmd = ["adb"] + args
+    gui_log(f">> {' '.join(log_cmd)}", level="cmd")
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
         if proc.stdout:
