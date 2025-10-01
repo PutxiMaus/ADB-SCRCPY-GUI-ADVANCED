@@ -5,7 +5,7 @@ from tkinter import ttk
 
 from ..utils.adb_utils import exec_adb, run_in_thread, run_adb
 from ..utils.gui_utils import gui_log
-from ..config.config import PROJECT_ROOT
+from ..config.config import TOOLS_DIR
 
 # cache y flag global
 label_cache = {}
@@ -43,7 +43,7 @@ def create_apps_tab(notebook):
 
                     run_adb(["pull", apk_path, str(local_apk)])
 
-                    aapt_path = PROJECT_ROOT / "tools" / "platform-tools" / "aapt.exe"
+                    aapt_path = TOOLS_DIR / "aapt.exe"
                     result = subprocess.run(
                         [str(aapt_path), "dump", "badging", str(local_apk)],
                         capture_output=True, text=True, encoding="utf-8", errors="ignore"

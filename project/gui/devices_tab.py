@@ -1,6 +1,7 @@
 import subprocess, re, socket, tkinter as tk
 from tkinter import ttk, simpledialog
 from ..utils.adb_utils import exec_adb, run_in_thread
+from ..config.config import TOOLS_DIR, ADB_EXE
 from ..utils.gui_utils import gui_log
 from .profiles_tab import add_profile
 from ..utils.net_utils import find_ip_from_mac, _get_local_ipv4_and_prefix, _ping_sweep_cold
@@ -16,9 +17,11 @@ tab_initialized = {}
 def list_connected_devices():
     """Devuelve [(serial/ip, info)] desde adb devices -l"""
     try:
-        result = subprocess.run(["adb", "devices", "-l"],
-                                capture_output=True, text=True,
-                                encoding="utf-8", errors="replace")
+        result = subprocess.run([
+            str(TOOLS_DIR/ADB_EXE), "devices", "-l"
+        ],
+            capture_output=True, text=True,
+            encoding="utf-8", errors="replace")
         devices = []
         for line in result.stdout.splitlines():
             if line.strip() and not line.startswith("List") and "device" in line:
@@ -42,7 +45,7 @@ def refresh_connected_list():
         if not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", serial):
             try:
                 result = subprocess.run(
-                    ["adb", "-s", serial, "shell", "ip", "-f", "inet", "addr", "show", "wlan0"],
+                    [str(TOOLS_DIR/ADB_EXE), "-s", serial, "shell", "ip", "-f", "inet", "addr", "show", "wlan0"],
                     capture_output=True, text=True, encoding="utf-8",
                     errors="replace", timeout=2
                 )

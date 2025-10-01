@@ -269,8 +269,8 @@ def create_explorer_tab(notebook):
     def on_tab_change(event):
         tab_id = event.widget.select()
         if event.widget.tab(tab_id, "text") == "Explorador":
-            list_local()
-            adb_list()
+            list_local(local_path_var.get())
+            adb_list(android_path_var.get())
 
     notebook.bind("<<NotebookTabChanged>>", on_tab_change)
 
