@@ -122,16 +122,39 @@ def copy_base_apk_path(tree, tab_apps):
         gui_log("Selecciona una app primero", level="error")
         return
     pkg = tree.item(selected[0])["values"][0]
-    path_output = run_adb(["shell", "pm", "path", pkg]).strip()
-    apk_paths = [line.replace("package:", "") for line in path_output.splitlines()]
-    base_apk = next((p for p in apk_paths if p.endswith("base.apk")), None)
+    path_output = run_adb(["shell", "pm", "path", pkg])
+
+    # Detectar errores o salida vacía
+    if not path_output:
+        gui_log("Salida vacía de adb al pedir la ruta del APK", level="error")
+        return
+    if isinstance(path_output, str) and path_output.startswith("Error ejecutando adb:"):
+        gui_log(path_output, level="error")
+        return
+
+    # Limpiar y obtener rutas
+    apk_paths = [line.replace("package:", "").strip() for line in path_output.splitlines() if line.strip()]
+
+    # Buscar explícitamente rutas que contengan 'base.apk' (no sólo termina con)
+    base_apk = next((p for p in apk_paths if "base.apk" in p), None)
+
+    # Estrategia de fallback: si no hay base.apk buscar un .apk que no sea un split/config
+    if not base_apk:
+        fallback = None
+        for p in apk_paths:
+            lname = p.lower()
+            if lname.endswith('.apk') and not any(x in lname for x in ('split', 'config', 'split_config')):
+                fallback = p
+                break
+        base_apk = fallback
 
     if base_apk:
         tab_apps.clipboard_clear()
         tab_apps.clipboard_append(base_apk)
-        gui_log(f"Ruta base.apk copiada: {base_apk}", level="info")
+        gui_log(f"Ruta APK copiada: {base_apk}", level="info")
     else:
-        gui_log("No se encontró base.apk para esta app", level="error")
+        # Añadir salida a log para debug cuando no se encuentre nada
+        gui_log(f"No se encontró base.apk para esta app. Salida de pm path:\n{path_output}", level="error")
 
 # =====================
 # FUNCION PRINCIPAL

@@ -15,7 +15,7 @@ COLORS = {
 
 def apply_theme(root):
     """Aplica un tema oscuro uniforme a toda la app usando ttk.Style"""
-    root.configure(bg=COLORS["bg"])
+    
     style = ttk.Style(root)
     style.theme_use("clam")
 

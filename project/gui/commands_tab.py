@@ -1,6 +1,7 @@
 import os, subprocess, random, tkinter as tk
 from tkinter import ttk, filedialog, simpledialog
 from ..config.config import PROJECT_ROOT
+from ..config.config import TOOLS_DIR
 from ..utils.adb_utils import exec_adb, run_in_thread
 from ..utils.gui_utils import gui_log
 
@@ -98,23 +99,20 @@ def stop_screenrecord_and_pull():
         return
     run_in_thread(lambda: exec_adb(["pull", "/sdcard/record.mp4", local]))
 
-def pull_file():
-    remote = simpledialog.askstring("Pull", "Ruta en dispositivo (ej: /sdcard/file.txt):")
-    if not remote:
+def set_wallpaper_via_agent():
+    img = filedialog.askopenfilename(title="Selecciona imagen", filetypes=[("Imágenes", "*.jpg;*.png")])
+    if not img:
         return
-    local = filedialog.asksaveasfilename(title="Guardar como", initialfile=os.path.basename(remote))
-    if not local:
-        return
-    run_in_thread(lambda: exec_adb(["pull", remote, local]))
 
-def push_file():
-    local = filedialog.askopenfilename(title="Selecciona fichero local")
-    if not local:
-        return
-    remote = simpledialog.askstring("Push", "Ruta destino en dispositivo (ej: /sdcard/file.txt):")
-    if not remote:
-        return
-    run_in_thread(lambda: exec_adb(["push", local, remote]))
+    remote = "/data/local/tmp/fondo.jpg"
+    installed = exec_adb(["shell", "pm", "list", "packages", "com.example.wallpaperchanger"])
+    if "com.example.wallpaperchanger" not in installed:
+        exec_adb(["install", os.path.join(TOOLS_DIR, "WallpaperAgent.apk")])
+    exec_adb(["push", img, remote])
+    exec_adb(["shell", "am", "broadcast", "-n", "com.example.wallpaperchanger/.WallpaperReceiver", "--es", "path", remote])
+    exec_adb(["shell", "rm", remote])
+    gui_log("Fondo aplicado mediante WallpaperAgent.", level="success")
+
 
 # =========================
 # Construcción de pestaña
@@ -153,8 +151,7 @@ def create_commands_tab(notebook):
         ("Stop scrcpy", stop_scrcpy),
         ("Start screenrecord", start_screenrecord),
         ("Stop screenrecord & pull", stop_screenrecord_and_pull),
-        ("Pull file", pull_file),
-        ("Push file", push_file),
+        ("Elegir fondo", set_wallpaper_via_agent),
         ("Get device info", get_device_info),
         ("Dump logcat", dump_logcat),
     ]
