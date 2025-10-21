@@ -13,7 +13,7 @@ Punto de entrada: `start.py`.
 ## Requisitos
 
 - Python 3.10+ (probado con 3.13 en Windows).
-- Windows: comandos `ping -n` y `arp -a`.
+- Windows
 
 ## Changelog
 
