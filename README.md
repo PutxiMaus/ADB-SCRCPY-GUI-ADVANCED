@@ -37,6 +37,6 @@ Puedes forzar una ruta personalizada a `adb`:
 
 - `ADB_PATH` o `ADB_EXECUTABLE` → ruta absoluta al binario `adb`.
 
-## Changelog
+## Instalation
 
-Consulta todas las versiones y cambios en el archivo [CHANGELOG.md](./CHANGELOG.md).
+Guia de instalacion [INSTALL.md](./INSTALL.md).
