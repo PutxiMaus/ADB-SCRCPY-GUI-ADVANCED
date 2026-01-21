@@ -1,7 +1,8 @@
+import ipaddress
 import subprocess, re, socket, tkinter as tk
 from tkinter import ttk, simpledialog
 from ..utils.adb_utils import exec_adb, run_in_thread
-from ..config.config import TOOLS_DIR, ADB_EXE
+from ..config.config import ADB_PATH, TOOLS_DIR
 from ..utils.gui_utils import gui_log
 from .profiles_tab import add_profile
 from ..utils.net_utils import find_ip_from_mac, _get_local_ipv4_and_prefix, _ping_sweep_cold
@@ -10,6 +11,10 @@ from ..utils.net_utils import find_ip_from_mac, _get_local_ipv4_and_prefix, _pin
 available_list = None
 connected_list = None
 tab_initialized = {}
+interface_var = None
+interface_combo = None
+
+AUTO_INTERFACE_LABEL = "Auto (red local)"
 
 # =========================
 # Funciones de gestión
@@ -17,11 +22,14 @@ tab_initialized = {}
 def list_connected_devices():
     """Devuelve [(serial/ip, info)] desde adb devices -l"""
     try:
-        result = subprocess.run([
-            str(TOOLS_DIR/ADB_EXE), "devices", "-l"
-        ],
-            capture_output=True, text=True,
-            encoding="utf-8", errors="replace")
+        result = subprocess.run(
+            [str(ADB_PATH), "devices", "-l"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            cwd=str(TOOLS_DIR),
+        )
         devices = []
         for line in result.stdout.splitlines():
             if line.strip() and not line.startswith("List") and "device" in line:
@@ -45,9 +53,24 @@ def refresh_connected_list():
         if not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", serial):
             try:
                 result = subprocess.run(
-                    [str(TOOLS_DIR/ADB_EXE), "-s", serial, "shell", "ip", "-f", "inet", "addr", "show", "wlan0"],
-                    capture_output=True, text=True, encoding="utf-8",
-                    errors="replace", timeout=2
+                    [
+                        str(ADB_PATH),
+                        "-s",
+                        serial,
+                        "shell",
+                        "ip",
+                        "-f",
+                        "inet",
+                        "addr",
+                        "show",
+                        "wlan0",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=2,
+                    cwd=str(TOOLS_DIR),
                 )
                 for line in result.stdout.splitlines():
                     if "inet " in line:
@@ -80,6 +103,66 @@ def shell_selected_device():
 # =========================
 # Escaneo y helpers ARP
 # =========================
+def _parse_arp_tables(output):
+    tables = {}
+    current_interface = None
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.lower().startswith("interface:"):
+            parts = line.split()
+            if len(parts) >= 2:
+                current_interface = parts[1]
+                tables.setdefault(current_interface, [])
+            continue
+        parts = line.split()
+        if len(parts) >= 2 and re.match(r"^\d{1,3}(\.\d{1,3}){3}$", parts[0]):
+            ip = parts[0]
+            mac = parts[1]
+            if current_interface:
+                tables.setdefault(current_interface, []).append((ip, mac))
+            else:
+                tables.setdefault("unknown", []).append((ip, mac))
+    return tables
+
+def _get_interface_candidates():
+    try:
+        out = subprocess.getoutput("arp -a")
+    except Exception as e:
+        gui_log(f"Error leyendo arp -a: {e}", level="error")
+        return []
+    tables = _parse_arp_tables(out)
+    return sorted([ip for ip in tables.keys() if ip != "unknown"])
+
+def _resolve_interface_ip():
+    if interface_var is None:
+        return None
+    selected = interface_var.get()
+    if not selected or selected == AUTO_INTERFACE_LABEL:
+        local_ip, _ = _get_local_ipv4_and_prefix()
+        return local_ip
+    return selected
+
+def _entries_for_interface(tables, interface_ip, prefix=24):
+    if not interface_ip:
+        return []
+    if interface_ip in tables:
+        return tables.get(interface_ip, [])
+    try:
+        net = ipaddress.ip_network(f"{interface_ip}/{prefix}", strict=False)
+    except ValueError:
+        return []
+    entries = []
+    for values in tables.values():
+        for ip, mac in values:
+            try:
+                if ipaddress.ip_address(ip) in net:
+                    entries.append((ip, mac))
+            except ValueError:
+                continue
+    return entries
+
 def scan_network_with_adb_status_callback(callback=None):
     """
     Escanea la salida de `arp -a` y para cada línea válida llama callback(ip, mac, adb_open).
@@ -87,23 +170,27 @@ def scan_network_with_adb_status_callback(callback=None):
     """
     try:
         out = subprocess.getoutput("arp -a")
-        for line in out.splitlines():
-            parts = line.split()
-            if len(parts) >= 2:
-                ip = parts[0]
-                mac = parts[1]
-                if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
-                    adb_open = False
-                    try:
-                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        s.settimeout(0.2)
-                        if s.connect_ex((ip, 5555)) == 0:
-                            adb_open = True
-                        s.close()
-                    except Exception:
-                        pass
-                    if callback:
-                        callback(ip, mac, adb_open)
+        tables = _parse_arp_tables(out)
+        interface_ip = _resolve_interface_ip()
+        local_ip, prefix = _get_local_ipv4_and_prefix()
+        prefix = prefix or 24
+        target_ip = interface_ip or local_ip
+        entries = _entries_for_interface(tables, target_ip, prefix=prefix)
+        if not entries:
+            gui_log("No se encontraron dispositivos en la red local seleccionada.", level="error")
+            return
+        for ip, mac in entries:
+            adb_open = False
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(0.2)
+                if s.connect_ex((ip, 5555)) == 0:
+                    adb_open = True
+                s.close()
+            except Exception:
+                pass
+            if callback:
+                callback(ip, mac, adb_open)
     except Exception as e:
         gui_log(f"Error escaneando red (arp): {e}", level="error")
 
@@ -212,8 +299,19 @@ def on_tab_change(event):
                 gui_log("Iniciando escaneo completo de red (ping sweep)...", level="info")
                 # Ejecutar las funciones que emplea 'Conectar perfil' para poblar ARP
                 find_ip_from_mac()
-                _get_local_ipv4_and_prefix()
-                _ping_sweep_cold()  # **bloqueante**: hace el ping sweep y rellena la ARP cache
+                interface_ip = _resolve_interface_ip()
+                local_ip, _ = _get_local_ipv4_and_prefix()
+                target_ip = interface_ip or local_ip
+                if not target_ip:
+                    gui_log("No se pudo detectar la IP local para escanear la red.", level="error")
+                    return
+                base_parts = target_ip.split(".")
+                if len(base_parts) >= 3:
+                    base = ".".join(base_parts[0:3])
+                    _ping_sweep_cold(base)  # **bloqueante**: hace el ping sweep y rellena la ARP cache
+                else:
+                    gui_log("IP local inválida para ping sweep.", level="error")
+                    return
                 gui_log("Ping sweep completado, actualizando tabla ARP completa.", level="info")
                 # Al terminar, actualizar la tabla con todo lo que haya en ARP
                 # Usar after en hilo principal para insertar
@@ -242,6 +340,25 @@ def create_devices_tabs(notebook):
     notebook.add(tab_network, text="Red local")
     frame_network = ttk.Frame(tab_network, padding=12, style="Dark.TFrame")
     frame_network.pack(fill=tk.BOTH, expand=True)
+
+    global available_list, interface_var, interface_combo
+    interface_row = ttk.Frame(frame_network, style="Dark.TFrame")
+    interface_row.pack(fill=tk.X, pady=(0, 6))
+    tk.Label(interface_row, text="Interfaz:", bg="#1e1f22", fg="#b8ffb8").pack(side=tk.LEFT, padx=(0, 6))
+    interface_var = tk.StringVar(value=AUTO_INTERFACE_LABEL)
+    interface_combo = ttk.Combobox(
+        interface_row,
+        textvariable=interface_var,
+        state="readonly",
+        values=[AUTO_INTERFACE_LABEL] + _get_interface_candidates(),
+        width=28,
+    )
+    interface_combo.pack(side=tk.LEFT)
+    ttk.Button(
+        interface_row,
+        text="Actualizar interfaces",
+        command=lambda: interface_combo.configure(values=[AUTO_INTERFACE_LABEL] + _get_interface_candidates()),
+    ).pack(side=tk.LEFT, padx=6)
 
     global available_list
     available_list = ttk.Treeview(frame_network, columns=("IP", "MAC"), show="headings", height=8)

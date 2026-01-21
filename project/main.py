@@ -7,7 +7,6 @@ from .gui.commands_tab import create_commands_tab
 from .gui.explorer_tab import create_explorer_tab
 from .gui.apps_tab import create_apps_tab
 from .gui.batch_tab import create_batch_tab
-from .gui.fastboot_tab import create_universal_flashing_tab
 from .utils import gui_utils as logs
 
 def main():
@@ -30,7 +29,6 @@ def main():
     create_explorer_tab(notebook)
     create_apps_tab(notebook)
     create_batch_tab(notebook)
-    create_universal_flashing_tab(notebook)
 
     paned.add(notebook, stretch="always")  # Notebook se expande
 

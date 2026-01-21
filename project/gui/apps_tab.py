@@ -34,7 +34,11 @@ def get_app_label(package, is_user_app=False):
                 aapt_path = TOOLS_DIR / "aapt.exe"
                 result = subprocess.run(
                     [str(aapt_path), "dump", "badging", str(local_apk)],
-                    capture_output=True, text=True, encoding="utf-8", errors="ignore"
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="ignore",
+                    cwd=str(TOOLS_DIR),
                 )
                 for line in result.stdout.splitlines():
                     if "application-label:" in line:
