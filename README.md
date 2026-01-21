@@ -39,4 +39,4 @@ Puedes forzar una ruta personalizada a `adb`:
 
 ## Changelog
 
-Consulta todas las versiones y cambios en el archivo [CHANGELOG.md](./CHANGELOG.md).
+Consulta todas las versiones y cambios en el archivo [VERSIONS.md](./VERSIONS.md).

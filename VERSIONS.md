@@ -3,6 +3,7 @@
 Listado de versiones del proyecto y sus cambios principales.
 
 ## Stable
+- [2.3.1](versions/2.3.1.md)
 - [2.3.0](versions/2.3.0.md)
 - [2.2.0](versions/2.2.0.md)
 - [2.1.0](versions/2.1.0.md)
