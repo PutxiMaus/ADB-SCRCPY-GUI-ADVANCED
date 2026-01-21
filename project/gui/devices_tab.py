@@ -1,14 +1,12 @@
 from tkinter import ttk
+
 from .connected_tab import create_connected_tab, refresh_connected_list
-from .network_tab import (
-    create_network_tab,
-    refresh_available_list_incremental,
-    on_tab_change,
-)
+from .network_tab import create_network_tab, on_tab_change, refresh_available_list_incremental
 
 # =========================
 # Construcción de pestañas
 # =========================
+
 def create_devices_tabs(notebook):
     style = ttk.Style()
     style.theme_use("clam")
