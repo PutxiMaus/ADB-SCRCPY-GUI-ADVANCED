@@ -1,7 +1,7 @@
 import os, subprocess, random, tkinter as tk
 from tkinter import ttk, filedialog, simpledialog
 from ..config.config import PROJECT_ROOT
-from ..config.config import TOOLS_DIR
+from ..config.config import TOOLS_DIR, ADB_PATH
 from ..utils.adb_utils import exec_adb, run_in_thread
 from ..utils.gui_utils import gui_log
 
@@ -18,7 +18,12 @@ def start_scrcpy():
         gui_log("scrcpy ya está en ejecución", level="error")
         return
     try:
-        _scrcpy_proc = subprocess.Popen(["scrcpy"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        _scrcpy_proc = subprocess.Popen(
+            ["scrcpy"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(TOOLS_DIR),
+        )
         gui_log("scrcpy iniciado", level="info")
     except Exception as e:
         gui_log(f"No se pudo iniciar scrcpy: {e}", level="error")
@@ -70,8 +75,10 @@ def start_screenrecord():
         return
     try:
         _screenrec_proc = subprocess.Popen(
-            ["adb", "shell", "screenrecord", "/sdcard/record.mp4"],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            [str(ADB_PATH), "shell", "screenrecord", "/sdcard/record.mp4"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(TOOLS_DIR),
         )
         gui_log("screenrecord iniciado en /sdcard/record.mp4", level="info")
     except Exception as e:
