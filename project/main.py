@@ -12,7 +12,7 @@ from .utils import gui_utils as logs
 
 def main():
     root = tk.Tk()
-    root.title("ADB+SCRCPY GUI v2.0")
+    root.title("ADB+SCRCPY GUI v2.3.1")
     root.state("zoomed")
 
     # Crear PanedWindow vertical
