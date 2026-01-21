@@ -14,7 +14,7 @@ tab_initialized = {}
 interface_var = None
 interface_combo = None
 
-AUTO_INTERFACE_LABEL = "Auto (red local)"
+AUTO_INTERFACE_LABEL = "Auto (red)"
 
 # =========================
 # Funciones de gestión
@@ -127,13 +127,80 @@ def _parse_arp_tables(output):
     return tables
 
 def _get_interface_candidates():
+    candidates = set()
+
     try:
         out = subprocess.getoutput("arp -a")
+        tables = _parse_arp_tables(out)
+        candidates.update([ip for ip in tables.keys() if ip != "unknown"])
     except Exception as e:
         gui_log(f"Error leyendo arp -a: {e}", level="error")
-        return []
-    tables = _parse_arp_tables(out)
-    return sorted([ip for ip in tables.keys() if ip != "unknown"])
+
+    try:
+        ip_proc = subprocess.run(
+            ["ip", "-o", "-4", "addr", "show"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        if ip_proc.stdout:
+            for line in ip_proc.stdout.splitlines():
+                parts = line.split()
+                if "inet" in parts:
+                    idx = parts.index("inet")
+                    if idx + 1 < len(parts):
+                        ip_value = parts[idx + 1].split("/")[0]
+                        if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip_value):
+                            candidates.add(ip_value)
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        gui_log(f"Error leyendo ip addr: {e}", level="error")
+
+    try:
+        ifconfig_proc = subprocess.run(
+            ["ifconfig"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        for line in ifconfig_proc.stdout.splitlines():
+            match = re.search(r"\binet (?:addr:)?(\d{1,3}(?:\.\d{1,3}){3})", line)
+            if match:
+                candidates.add(match.group(1))
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        gui_log(f"Error leyendo ifconfig: {e}", level="error")
+
+    try:
+        ipconfig_proc = subprocess.run(
+            ["ipconfig"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        if ipconfig_proc.stdout:
+            for line in ipconfig_proc.stdout.splitlines():
+                match = re.search(
+                    r"(?:IPv4 Address|Dirección IPv4)[^:]*:\s*(\d{1,3}(?:\.\d{1,3}){3})",
+                    line,
+                    re.IGNORECASE,
+                )
+                if match:
+                    candidates.add(match.group(1))
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        gui_log(f"Error leyendo ipconfig: {e}", level="error")
+
+    return sorted(candidates)
 
 def _resolve_interface_ip():
     if interface_var is None:
@@ -177,7 +244,7 @@ def scan_network_with_adb_status_callback(callback=None):
         target_ip = interface_ip or local_ip
         entries = _entries_for_interface(tables, target_ip, prefix=prefix)
         if not entries:
-            gui_log("No se encontraron dispositivos en la red local seleccionada.", level="error")
+            gui_log("No se encontraron dispositivos en la red seleccionada.", level="error")
             return
         for ip, mac in entries:
             adb_open = False
@@ -280,7 +347,7 @@ def on_tab_change(event):
         gui_log(f"Evento de cambio de pestaña inválido: {e}", level="error")
         return
 
-    if tab_text == "Red local":
+    if tab_text == "Red":
         # Si ya inicializamos antes, no volver a lanzar el ping sweep automático
         if tab_initialized.get("red_local"):
             # Si ya inicializada, simplemente refrescamos mostrando incremental si quieres,
@@ -335,9 +402,9 @@ def create_devices_tabs(notebook):
     style.configure("TButton")
     style.configure("Vertical.TScrollbar")
 
-    # --- Tab Red local ---
+    # --- Tab Red ---
     tab_network = ttk.Frame(notebook)
-    notebook.add(tab_network, text="Red local")
+    notebook.add(tab_network, text="Red")
     frame_network = ttk.Frame(tab_network, padding=12, style="Dark.TFrame")
     frame_network.pack(fill=tk.BOTH, expand=True)
 
