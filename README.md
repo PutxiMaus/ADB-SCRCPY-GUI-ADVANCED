@@ -37,42 +37,6 @@ Puedes forzar una ruta personalizada a `adb`:
 
 - `ADB_PATH` o `ADB_EXECUTABLE` → ruta absoluta al binario `adb`.
 
-## Configuración rápida
+## Changelog
 
-1. Descarga el zip del proyecto.
-2. Instala Python 3.10 o superior.
-3. Instala `adb` y `scrcpy`:
-   - O bien agrega `adb` al PATH del sistema.
-   - O bien coloca los binarios en `config/tools/platform-tools`.
-4. Activa **Depuración USB** en el dispositivo Android (Opciones de desarrollador).
-5. Ejecuta:
-
-```
-python start.py
-```
-
-## Variables de entorno
-
-Puedes forzar una ruta personalizada a `adb`:
-
-- `ADB_PATH` o `ADB_EXECUTABLE` → ruta absoluta al binario `adb`.
-
-## Configuración rápida
-
-1. Descarga el zip del proyecto.
-2. Instala Python 3.10 o superior.
-3. Instala `adb` y `scrcpy`:
-   - O bien agrega `adb` al PATH del sistema.
-   - O bien coloca los binarios en `config/tools/platform-tools`.
-4. Activa **Depuración USB** en el dispositivo Android (Opciones de desarrollador).
-5. Ejecuta:
-
-```
-python start.py
-```
-
-## Variables de entorno
-
-Puedes forzar una ruta personalizada a `adb`:
-
-- `ADB_PATH` o `ADB_EXECUTABLE` → ruta absoluta al binario `adb`.
+Consulta todas las versiones y cambios en el archivo [CHANGELOG.md](./CHANGELOG.md).

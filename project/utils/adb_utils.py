@@ -1,6 +1,6 @@
 import subprocess
 import threading
-from ..config.config import ADB_PATH
+from ..config.config import ADB_PATH, TOOLS_DIR
 from .gui_utils import gui_log
 
 DEFAULT_TIMEOUT = 15
@@ -20,6 +20,7 @@ def _run_adb_command(args, timeout=DEFAULT_TIMEOUT, log_command=True):
             encoding="utf-8",
             errors="replace",
             timeout=timeout,
+            cwd=str(TOOLS_DIR),
         )
     except FileNotFoundError:
         gui_log(f"No se encontró adb en: {ADB_PATH}", level="error")

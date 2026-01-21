@@ -2,7 +2,7 @@ import ipaddress
 import subprocess, re, socket, tkinter as tk
 from tkinter import ttk, simpledialog
 from ..utils.adb_utils import exec_adb, run_in_thread
-from ..config.config import ADB_PATH
+from ..config.config import ADB_PATH, TOOLS_DIR
 from ..utils.gui_utils import gui_log
 from .profiles_tab import add_profile
 from ..utils.net_utils import find_ip_from_mac, _get_local_ipv4_and_prefix, _ping_sweep_cold
@@ -24,8 +24,11 @@ def list_connected_devices():
     try:
         result = subprocess.run(
             [str(ADB_PATH), "devices", "-l"],
-            capture_output=True, text=True,
-            encoding="utf-8", errors="replace"
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            cwd=str(TOOLS_DIR),
         )
         devices = []
         for line in result.stdout.splitlines():
@@ -67,6 +70,7 @@ def refresh_connected_list():
                     encoding="utf-8",
                     errors="replace",
                     timeout=2,
+                    cwd=str(TOOLS_DIR),
                 )
                 for line in result.stdout.splitlines():
                     if "inet " in line:
