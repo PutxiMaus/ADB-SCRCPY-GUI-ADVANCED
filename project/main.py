@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from .gui.theme import apply_theme, force_dark
 from .gui.profiles_tab import create_profiles_tab
-from .gui.devices_tab import create_devices_tabs
+from .gui.connected_tab import create_connected_tab
+from .gui.network_tab import create_network_tab
 from .gui.commands_tab import create_commands_tab
 from .gui.explorer_tab import create_explorer_tab
 from .gui.apps_tab import create_apps_tab
@@ -24,7 +25,8 @@ def main():
 
     # Pestañas
     create_profiles_tab(notebook)
-    create_devices_tabs(notebook)
+    create_network_tab(notebook)
+    create_connected_tab(notebook)
     create_commands_tab(notebook)
     create_explorer_tab(notebook)
     create_apps_tab(notebook)
