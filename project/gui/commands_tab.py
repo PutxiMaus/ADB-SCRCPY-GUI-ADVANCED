@@ -28,6 +28,22 @@ def start_scrcpy():
     except Exception as e:
         gui_log(f"No se pudo iniciar scrcpy: {e}", level="error")
 
+def stop_scrcpy():
+    global _scrcpy_proc
+    if not _scrcpy_proc:
+        gui_log("scrcpy no está en ejecución", level="error")
+        return
+    try:
+        _scrcpy_proc.terminate()
+        _scrcpy_proc.wait(timeout=5)
+    except Exception:
+        try:
+            _scrcpy_proc.kill()
+        except Exception:
+            pass
+    _scrcpy_proc = None
+    gui_log("scrcpy detenido", level="info")
+
 def install_apk():
     apk = filedialog.askopenfilename(title="Selecciona APK", filetypes=[("APK files", "*.apk")])
     if not apk:
@@ -171,11 +187,12 @@ def create_commands_tab(notebook):
         ("Disconnect all", adb_disconnect_all),
         ("Reboot", reboot_device),
         ("Install APK", install_apk),
-        ("Uninstall APK", uninstall_app),
+        ("Uninstall app", uninstall_app),
         ("Start scrcpy", start_scrcpy),
+        ("Stop scrcpy", stop_scrcpy),
         ("Start screenrecord", start_screenrecord),
         ("Stop screenrecord & pull", stop_screenrecord_and_pull),
-        ("Wallpaper", set_wallpaper_via_agent),
+        ("Elegir fondo", set_wallpaper_via_agent),
         ("Get device info", get_device_info),
         ("Dump logcat", dump_logcat),
     ]
