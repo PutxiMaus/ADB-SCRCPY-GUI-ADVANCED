@@ -76,7 +76,3 @@ python start.py
 Puedes forzar una ruta personalizada a `adb`:
 
 - `ADB_PATH` o `ADB_EXECUTABLE` → ruta absoluta al binario `adb`.
-
-## Instalation
-
-Guia de instalacion [INSTALL.md](./INSTALL.md).
