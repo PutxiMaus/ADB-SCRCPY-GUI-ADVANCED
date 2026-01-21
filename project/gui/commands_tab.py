@@ -131,25 +131,59 @@ def create_commands_tab(notebook):
     cmds_outer = ttk.Frame(tab_comandos, padding=12)
     cmds_outer.grid(row=0, column=0, sticky="nsew")
 
-    cmds_grid = ttk.Frame(cmds_outer, padding=12)
-    cmds_grid.grid(row=0, column=0, sticky="nsew")
-
-    # expandir
     tab_comandos.rowconfigure(0, weight=1)
     tab_comandos.columnconfigure(0, weight=1)
     cmds_outer.rowconfigure(0, weight=1)
     cmds_outer.columnconfigure(0, weight=1)
 
-    commands = [
+    sections = ttk.Notebook(cmds_outer)
+    sections.grid(row=0, column=0, sticky="nsew")
+
+    def build_section(parent, commands, cols=3):
+        grid = ttk.Frame(parent, padding=12)
+        grid.pack(fill="both", expand=True)
+        for i, (label, cb) in enumerate(commands):
+            r = i // cols
+            c = i % cols
+            btn = ttk.Button(grid, text=label, command=cb)
+            btn.grid(row=r, column=c, padx=16, pady=8, ipadx=10, ipady=8, sticky="nsew")
+
+        for c in range(cols):
+            grid.columnconfigure(c, weight=1)
+
+        total_rows = (len(commands) + cols - 1) // cols
+        for r in range(total_rows):
+            grid.rowconfigure(r, weight=1, minsize=50)
+
+    apps_tab = ttk.Frame(sections)
+    control_tab = ttk.Frame(sections)
+    other_tab = ttk.Frame(sections)
+    sections.add(apps_tab, text="Apps")
+    sections.add(control_tab, text="Control")
+    sections.add(other_tab, text="Otros")
+
+    apps_commands = [
+        ("Play Store", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.android.vending", "-c", "android.intent.category.LAUNCHER", "1"]))),
+        ("YouTube", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.google.android.youtube", "-c", "android.intent.category.LAUNCHER", "1"]))),
+        ("Chrome", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.android.chrome", "-c", "android.intent.category.LAUNCHER", "1"]))),
+        ("Gmail", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.google.android.gm", "-c", "android.intent.category.LAUNCHER", "1"]))),
+        ("Maps", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.google.android.apps.maps", "-c", "android.intent.category.LAUNCHER", "1"]))),
+        ("Ajustes", lambda: run_in_thread(lambda: exec_adb(["shell", "am", "start", "-a", "android.settings.SETTINGS"]))),
+    ]
+
+    control_commands = [
         ("Home", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "3"]))),
+        ("Back", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "4"]))),
+        ("Recientes", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "187"]))),
         ("Power", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "26"]))),
         ("Vol +", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "24"]))),
         ("Vol -", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "25"]))),
+        ("Mute", lambda: run_in_thread(lambda: exec_adb(["shell", "input", "keyevent", "164"]))),
         ("Screenshot", lambda: run_in_thread(lambda: exec_adb(["shell", "screencap", "-p", "/sdcard/screen.png"]) or exec_adb(["pull", "/sdcard/screen.png", os.path.join(PROJECT_ROOT, "screenshot.png")]))),
-        ("Play Store", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.android.vending", "-c", "android.intent.category.LAUNCHER", "1"]))),
-        ("YouTube", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.google.android.youtube", "-c", "android.intent.category.LAUNCHER", "1"]))),
         ("Crazy taps", lambda: run_in_thread(lambda: [exec_adb(["shell", "input", "tap", str(random.randint(0, 1080)), str(random.randint(0, 1920))]) for _ in range(10)])),
-        ("Chrome", lambda: run_in_thread(lambda: exec_adb(["shell", "monkey", "-p", "com.android.chrome", "-c", "android.intent.category.LAUNCHER", "1"]))),
+    ]
+
+    other_commands = [
         ("Disconnect all", adb_disconnect_all),
         ("Reboot", reboot_device),
         ("Install APK", install_apk),
@@ -163,18 +197,8 @@ def create_commands_tab(notebook):
         ("Dump logcat", dump_logcat),
     ]
 
-    cols = 3
-    for i, (label, cb) in enumerate(commands):
-        r = i // cols
-        c = i % cols
-        btn = ttk.Button(cmds_grid, text=label, command=cb)
-        btn.grid(row=r, column=c, padx=16, pady=8, ipadx=10, ipady=8, sticky="nsew")
-
-    for c in range(cols):
-        cmds_grid.columnconfigure(c, weight=1)
-
-    total_rows = (len(commands) + cols - 1) // cols
-    for r in range(total_rows):
-        cmds_grid.rowconfigure(r, weight=1, minsize=50)
+    build_section(apps_tab, apps_commands)
+    build_section(control_tab, control_commands)
+    build_section(other_tab, other_commands)
 
     return tab_comandos
